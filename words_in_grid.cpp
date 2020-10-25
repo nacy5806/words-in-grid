@@ -19,7 +19,9 @@
 
 	The "word tree" structure is pretty simple; every path down the tree (starting from the root, not necessarily
 	ending at a leaf) represents a collection of letters that can be built that either A) is a word, or B) is the
-	start of a word.
+	start of a word. The idea was to use the "make recursive guesses" structure used in stuff like sudoku solvers,
+	but only make guesses that could lead to a word. As an example, the program will never guess that the beginning
+	of a word in nwl2018.txt is "lt", because there isn't a word like that in that file.
 
 	There are 26 different trees, one for each letter of the alphabet.
 
@@ -31,8 +33,8 @@
 				   / \      / \
 				   d n      o  n
 
-	A DFS would generate the words / starts of words LAD, LAN, LIO, and LIN. To optimize our search for this problem, we only
-	go to a lower-level node if we have 1 or more of that letter in the hash table.
+	A DFS would generate the words / starts of words LAD, LAN, LIO, and LIN. We only
+	go to a lower-level node if we have 1 or more of that letter available to use.
 
 	As we search, we see if the nodes we're on are the end of words; this means that we can build a word
 	from the letters in the grid. We keep track of these nodes that are ends of words, then at the end of our
@@ -76,6 +78,7 @@ std::ostream& operator<<(std::ostream& out, const LetterNode* ln) {
 
 void findWord(int* lettersAvailable, LetterNode* currentNode, std::list<LetterNode*>& knownWords) {
 	// Standard DFS through the word trees, adding every node we can reach that's the end of a word
+	// If a letter is available, then recurse.
 
 	if (currentNode -> isEndOfWord()) knownWords.push_back(currentNode);
 
@@ -91,7 +94,7 @@ void findWord(int* lettersAvailable, LetterNode* currentNode, std::list<LetterNo
 
 }
 
-// 
+// Driver function for the DFS
 void findAllWords(const std::string& grid, LetterNode** wordTree) {
 
 	int* letters = new int[26];
@@ -104,6 +107,9 @@ void findAllWords(const std::string& grid, LetterNode** wordTree) {
 
 	std::list<LetterNode*> words;
 	for (int i = 0; i < 26; i++) {
+		// using all 26 possible starting points, start the DFS;
+		// store all encountered LetterNodes that are the end of words in
+		// the words list
 		if (letters[i] > 0) {
 			letters[i] -= 1;
 			findWord(letters, wordTree[i], words);
@@ -119,13 +125,14 @@ void findAllWords(const std::string& grid, LetterNode** wordTree) {
 		
 		if (wordsOnLine < 5) { std::cout << "\t"; wordsOnLine++; }
 		else { std::cout << std::endl; wordsOnLine = 0; }
-	} 
+	}
 
 	std::cout << std::endl;
 	delete [] letters;
 }
 
-// Takes in the dictionary file, returns the word tree.
+// Takes in the dictionary file, returns the word tree for that dictionary file.
+// Assumes that all the words in the file are entirely lowercase letters.
 LetterNode** makeWordTree(std::ifstream& infile) {
 	std::cout << "Constructing word tree..." << std::endl;
 
@@ -191,7 +198,7 @@ int main(int argc, char* argv[]) {
 
 	std::ifstream infile(argv[1]);
 	if (!infile) {
-		std::cout << "ERROR: Bad input file; make sure you're entering the name correctly" << std::endl;
+		std::cout << "ERROR: Bad input file \"" << argv[1] << "\"" << std::endl;
 		return 1;
 	}
 
